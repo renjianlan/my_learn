@@ -348,3 +348,94 @@ p命名空间是对Ioc/DI的简化，使用p命名空间可以更加方便的完
 </beans>
 ```
 
+##### Spring的工厂方法
+
+Ioc通过工厂模式创建bean的方式有两种：
+
+- 静态工厂方法
+- 实例工厂方法
+
+​    静态工厂方法
+
+```java
+public class Test4 {
+    public static void main(String[] args){
+        ApplicationContext applicationContext=new ClassPathXmlApplicationContext("./src/main/resources/spring-factory.xml");
+        Car car= (Car) applicationContext.getBean("car");
+        System.out.println(car);
+    }
+}
+```
+
+```java
+public class StaticCarFactory {
+     private static Map<Integer, Car> carMap;
+     static{
+         carMap=new HashMap<Integer, Car>();
+         carMap.put(1,new Car(1,"宝马"));
+         carMap.put(2,new Car(2,"奔驰"));
+     }
+     public static Car getCar(Integer id){
+         return carMap.get(id);
+     }
+}
+```
+
+```xml
+    <!--配置静态工厂创建 Car-->
+    <bean id="car" class="factory.StaticCarFactory" factory-method="getCar">
+        <constructor-arg value="1"></constructor-arg>
+    </bean>
+```
+
+   实例工厂方法
+
+```java
+public class InstanceCarFactory {
+    private Map<Integer, Car> carMap;
+    public InstanceCarFactory(){
+        carMap=new HashMap<Integer, Car>();
+        carMap.put(1,new Car(1,"宝马"));
+        carMap.put(2,new Car(2,"奔驰"));
+    }
+    public Car getCar(Integer id){
+        return carMap.get(id);
+    }
+}
+
+```
+
+```xml
+    <!--配置实例工厂bean-->
+    <bean id="carFactory" class="factory.InstanceCarFactory">
+    </bean>
+
+    <!--通过实例工厂创建 Car-->
+    <bean id="car2" factory-bean="carFactory" factory-method="getCar">
+        <constructor-arg value="1"></constructor-arg>
+    </bean>
+```
+
+##### IoC自动装载（Autowire）
+
+IoC负责创建对象，DI负责完成对象的依赖注入，通过配置property标签的ref属性来完成，同时Spring提供了另外一种更加简便的依赖注入方式，自动装载，不需要手动配置property，IoC容器会自动选择bean完成注入。
+
+自动装载有两种方式：
+
+- byName：通过属性名自动装载
+
+  ```xml
+      <bean id="car" class="entity.Car">
+          <property name="id" value="1"></property>
+          <property name="name" value="宝马"></property>
+      </bean>
+  
+      <bean id="person" class="entity.Person" autowire="byName">
+          <property name="id" value="11"></property>
+          <property name="name" value="张三"></property>
+      </bean>
+  ```
+
+- byType：通过属性的数据类型自动装载
+
+​       注意，如果说同时存在两个及以上的符合条件的bean时，自动装载会抛出异常。
