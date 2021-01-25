@@ -464,3 +464,51 @@ AOP是对面向对象编程的一个补充，在运行时，动态的将代码�
 </dependency>
 ```
 
+- 创建一个计算器接口Cal，定义4个方法
+
+  ```java
+  public interface Cal {
+      public int add(int num1,int num2);
+      public int sub(int num1,int num2);
+      public int mul(int num1,int num2);
+      public int div(int num1,int num2);
+  }
+  ```
+
+- 创建接口的实现类CalImpl
+
+  ```java
+  public class CalImpl implements Cal {
+      public int add(int num1, int num2) {
+          System.out.println("add方法的参数是["+num1+","+num2+"]");
+          int result=num1+num2;
+          System.out.println("add方法的结果是"+result);
+          return result;
+      }
+  
+      public int sub(int num1, int num2) {
+          System.out.println("sub方法的参数是["+num1+","+num2+"]");
+          int result=num1-num2;
+          System.out.println("sub方法的结果是"+result);
+          return result;
+      }
+  
+      public int mul(int num1, int num2) {
+          System.out.println("mul方法的参数是["+num1+","+num2+"]");
+          int result=num1*num2;
+          System.out.println("mul方法的结果是"+result);
+          return result;
+      }
+  
+      public int div(int num1, int num2) {
+          System.out.println("div方法的参数是["+num1+","+num2+"]");
+          int result=num1/num2;
+          System.out.println("div方法的结果是"+result);
+          return result;
+      }
+  }
+  ```
+
+  上述代码中，日志信息和业务逻辑的耦合性很高，不利于系统的维护，使用AOP可以进行优化，如何来实现AOP？使用动态代理的方式来实现。
+
+  给业务代码找一个代理，打印日志信息的工作交给代理来做，这样的话业务代码只需关注自身的业务即可
