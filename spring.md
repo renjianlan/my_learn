@@ -439,3 +439,28 @@ IoC负责创建对象，DI负责完成对象的依赖注入，通过配置proper
 - byType：通过属性的数据类型自动装载
 
 ​       注意，如果说同时存在两个及以上的符合条件的bean时，自动装载会抛出异常。
+
+##### AOP：面向切面编程（将散布在系统中的公共功能集中解决）
+
+AOP优点：降低模块之间的耦合度、使系统容易扩展、更好的代码复用、非业务代码更加集中，不分散，便于统一管理、业务代码更加简洁纯粹，不惨杂其他代码的影响AOP
+
+AOP是对面向对象编程的一个补充，在运行时，动态的将代码切入到指定方法，指定位置上的编程，将不同方法的同一个位置抽象成一个切面对象，对该切面对象进行编程
+
+##### 如何使用？
+
+创建maven工程，pom.xml中添加
+
+```xml
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aop</artifactId>
+    <version>4.3.7.RELEASE</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aspects</artifactId>
+    <version>4.3.7.RELEASE</version>
+</dependency>
+```
+
