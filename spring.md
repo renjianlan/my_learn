@@ -512,3 +512,226 @@ AOP是对面向对象编程的一个补充，在运行时，动态的将代码�
   上述代码中，日志信息和业务逻辑的耦合性很高，不利于系统的维护，使用AOP可以进行优化，如何来实现AOP？使用动态代理的方式来实现。
 
   给业务代码找一个代理，打印日志信息的工作交给代理来做，这样的话业务代码只需关注自身的业务即可
+  
+  ```java
+  package utils;
+  
+  import java.lang.reflect.InvocationHandler;
+  import java.lang.reflect.Method;
+  import java.lang.reflect.Proxy;
+  import java.util.Arrays;
+  
+  public class MyInvocationHandler implements InvocationHandler {
+      //MyInvocationHandler不是代理类，它可以创建代理类
+      //接收委托对象
+      private Object object=null;
+      //返回代理对象
+      public Object bind(Object object){
+          this.object=object;
+          //根据委托对象的所有接口，动态创建代理对象
+          return Proxy.newProxyInstance(object.getClass().getClassLoader(),object.getClass().getInterfaces(),this);
+      }
+  
+      /**
+       *
+       * @param proxy
+       * @param method 方法
+       * @param args   参数
+       * @return
+       * @throws Throwable
+       */
+      public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+          System.out.println(method.getName()+"方法的参数是"+ Arrays.toString(args));
+          //委托对象执行真正的业务方法，反射机制可以理解为方法调对象
+          Object result=method.invoke(this.object,args);
+          System.out.println(method.getName()+"的结果是"+result);
+          return result;
+      }
+  }
+  ```
+  
+  以上是通过动态代理实现AOP的过程，比较复杂，不好理解，spring框架对AOP进行了封装，使用spring框架可以用面向对象的思想来实现AOP。
+  
+  spring框架中不需要创建InvocationHandler，只需要创建一个切面对象，将所有的非业务代码在切面对象中完成即可，spring框架底层会自动根据切面类以及目标类生成一个代理对象。
+  
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <project xmlns="http://maven.apache.org/POM/4.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+      <modelVersion>4.0.0</modelVersion>
+  
+      <groupId>org.example</groupId>
+      <artifactId>spring_aop</artifactId>
+      <version>1.0-SNAPSHOT</version>
+  
+      <dependencies>
+          <dependency>
+              <groupId>org.springframework</groupId>
+              <artifactId>spring-aop</artifactId>
+              <version>4.3.7.RELEASE</version>
+          </dependency>
+  
+          <dependency>
+              <groupId>org.springframework</groupId>
+              <artifactId>spring-aspects</artifactId>
+              <version>4.3.7.RELEASE</version>
+          </dependency>
+  
+          <dependency>
+              <groupId>org.springframework</groupId>
+              <artifactId>spring-context</artifactId>
+              <version>4.3.7.RELEASE</version>
+          </dependency>
+      </dependencies>
+  
+  </project>
+  ```
+
+```java
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+
+@Aspect
+@Component
+public class LoggerAspect {
+    @Before("execution(public int utils.Impl.CalImpl.*(..))")
+    public void before(JoinPoint joinPoint){
+        //获取方法名
+        String name=joinPoint.getSignature().getName();
+        //获取参数
+        String args= Arrays.toString(joinPoint.getArgs());
+        System.out.println(name+"方法的参数是："+args);
+    }
+}
+```
+
+LoggerAspect类定义处添加的两个注释：
+
+- @Aspect：表示该类是切面类
+- @Component：将该类的对象注入到IoC容器
+
+具体方法处添加的注解：
+
+@Before：表示方法执行的具体位置和时机。
+
+CalImpl事项类也需要加@Component注解,交给Ioc容器来管理
+
+```java
+package utils.Impl;
+
+import org.springframework.stereotype.Component;
+import utils.Cal;
+
+@Component
+public class CalImpl implements Cal {
+    public int add(int num1, int num2) {
+        //System.out.println("add方法的参数是["+num1+","+num2+"]");
+        int result=num1+num2;
+        //System.out.println("add方法的结果是"+result);
+        return result;
+    }
+
+    public int sub(int num1, int num2) {
+        //System.out.println("sub方法的参数是["+num1+","+num2+"]");
+        int result=num1-num2;
+        //System.out.println("sub方法的结果是"+result);
+        return result;
+    }
+
+    public int mul(int num1, int num2) {
+        //System.out.println("mul方法的参数是["+num1+","+num2+"]");
+        int result=num1*num2;
+        //System.out.println("mul方法的结果是"+result);
+        return result;
+    }
+
+    public int div(int num1, int num2) {
+        //System.out.println("div方法的参数是["+num1+","+num2+"]");
+        int result=num1/num2;
+        //System.out.println("div方法的结果是"+result);
+        return result;
+    }
+}
+
+```
+
+spring.xml中配置aop
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+    					http://www.springframework.org/schema/beans/spring-beans.xsd
+    					http://www.springframework.org/schema/context
+    					http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+    <!--自动扫描-->
+    <context:component-scan base-package="java"></context:component-scan>
+    <!--使aspect注解生效，自动为目标生成动态代理对象-->
+    <aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+</beans>
+```
+
+context:component-scan 将java包中的所有类进行扫描，如果该类同时添加了@Component，则将该类扫描到IOC容器中，即Ioc管理它的对象
+
+aop:aspectj-autoproxy 让 Spring框架结合切面类和目标类自动生成动态代理对象
+
+- 切面：横切关注点被模块化的抽象对象
+- 通知：切面对象完成的工作
+- 目标：被通知的对象，即被横切的对象
+- 代理：切面、通知、目标混合之后的对象
+- 连接点：通知要插入业务代码的具体位置
+- 切点：aop通过切点定位到连接点
+
+```java
+package aop;
+
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.*;
+import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+
+@Aspect
+@Component
+public class LoggerAspect {
+    @Before("execution(public int utils.Impl.CalImpl.*(..))")
+    public void before(JoinPoint joinPoint){
+        //获取方法名
+        String name=joinPoint.getSignature().getName();
+        //获取参数
+        String args= Arrays.toString(joinPoint.getArgs());
+        System.out.println(name+"方法的参数是："+args);
+    }
+
+    @After("execution(public int utils.Impl.CalImpl.*(..))")
+    public void after(JoinPoint joinPoint){
+        //获取方法名
+        String name=joinPoint.getSignature().getName();
+        System.out.println(name+"方法执行完毕");
+    }
+
+    @AfterReturning(value="execution(public int utils.Impl.CalImpl.*(..))",returning = "result")
+    public void afterReturning(JoinPoint joinPoint,Object result){
+        //获取方法名
+        String name=joinPoint.getSignature().getName();
+        System.out.println(name+"方法的结果是："+result);
+    }
+
+    @AfterThrowing(value="execution(public int utils.Impl.CalImpl.*(..))",throwing = "exception")
+    public void AfterThrowing(JoinPoint joinPoint,Exception exception){
+        //获取方法名
+        String name=joinPoint.getSignature().getName();
+        System.out.println(name+"方法抛出异常："+exception);
+    }
+}
+
+```
+
