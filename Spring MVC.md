@@ -19,7 +19,7 @@ SpringMVC就是对这套流程的封装，屏蔽了很多底层代码，开放�
 - ModelAndView：装载了模型数据和视图信息，作为Handler的处理结果，返回给DispatcherServlet
 - ViewResolver：视图解析器，DispatcherServlet通过它将逻辑视图解析为物理视图，将渲染的结果响应给客户端
 
-##### SpringMVC的工作流程
+##### SpringMVC的工作流程(真正需要开发者进行处理的只有View和Handler)
 
 - 客户端请求被DispatcherServlet接收
 - 根据HandlerMapping映射到Handler
@@ -30,3 +30,66 @@ SpringMVC就是对这套流程的封装，屏蔽了很多底层代码，开放�
 - DispatcherServlet将获取的ModelAndView传给ViewResolver视图解析器，将逻辑视图（只是一个视图名）解析为物理视图View
 - ViewResolver返回一个DispatcherServlet
 - DispatcherServlet根据View进行视图渲染，将模型数据Model填充到视图View中，最后DispatcherServlet将渲染后的结果响应到客户端
+
+##### 如何使用？
+
+- 创建Maven工程，pom.xml
+
+  ```xml
+  <dependencies>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-webmvc</artifactId>
+        <version>5.0.11.RELEASE</version>
+      </dependency>
+    </dependencies>
+  ```
+
+- 在web.xml中配置DispatcherServlet
+
+  ```xml
+  <!DOCTYPE web-app PUBLIC
+   "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+   "http://java.sun.com/dtd/web-app_2_3.dtd" >
+  
+  <web-app>
+    <display-name>Archetype Created Web Application</display-name>
+    <servlet>
+      <servlet-name>dispatcherServlet</servlet-name>
+      <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+      <init-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:springmvc.xml</param-value>
+      </init-param>
+    </servlet>
+    <servlet-mapping>
+      <servlet-name>dispatcherServlet</servlet-name>
+      <url-pattern>/</url-pattern>
+    </servlet-mapping>
+  
+  </web-app>
+  ```
+
+- springmvc.xml
+
+  ```xml
+  <beans xmlns="http://www.springframework.org/schema/beans"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:p="http://www.springframework.org/schema/p"
+         xmlns:context="http://www.springframework.org/schema/context"
+         xsi:schemaLocation="http://www.springframework.org/schema/beans
+      					http://www.springframework.org/schema/beans/spring-beans.xsd
+      					http://www.springframework.org/schema/context
+      					http://www.springframework.org/schema/context/spring-context.xsd">
+      <!--自动扫描-->
+      <context:component-scan base-package="com.example"></context:component-scan>
+  
+      <!--配置视图解析器-->
+      <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+          <property name="suffix" value=".jsp"></property>
+          <property name="prefix" value="/"></property>
+      </bean>
+  </beans>
+  ```
+
+  
