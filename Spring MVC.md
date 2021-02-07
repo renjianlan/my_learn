@@ -92,4 +92,42 @@ SpringMVC就是对这套流程的封装，屏蔽了很多底层代码，开放�
   </beans>
   ```
 
-  
+  ##### SpringMVC注解
+
+- @RequestMapping
+
+  SpringMVC通过@RequestMapping注解将URL请求与业务方法进行映射，在Handler的类定义处以及方法定义处都可以添加该注解，在类的定义处添加就相当于客户端多了一层访问路径
+
+- @Controller
+
+  在类的定义处添加，将该类交给ioc容器管理（结合springmvc.xml的自动扫描配置使用），使其成为控制器，可以接收客户端请求
+
+- @RequestMapping相关参数
+
+  - value：指定url请求的实际地址，是@RequestMapping的默认值
+
+    @RequestMapping（value="/index") 和@RequestMapping("/index")功能一样
+
+  - method：指定请求的method类型，GET、POST、PUT、DELETE，不加请求类型代表GET和POST都可以
+
+  - params：指定请求中必须包含某些参数才能访问，例params={"name","id=10"}
+
+  - @RequestParam("name")String str完成HTTP请求参数与业务方法形参的映射，自动完成数据类型的转换，这些工作都是由HandlerAdapter完成
+
+SpringMVC也支持RESTful风格的url
+
+- 传统类型：http://localhost:8080/hello/index?name=zhangsan&id=10
+
+- REST：http://localhost:8080/hello/rest/zhangsan/10，必须加注解映射，通过@PathVariable注解完成请求参数与形参的映射
+
+```java
+@RequestMapping("/rest/{name}/{id}")
+public String rest(@PathVariable("name")String name, @PathVariable("id")int id){
+    System.out.println(name);
+    System.out.println(id);
+    return "index";
+}
+```
+
+
+
