@@ -114,7 +114,7 @@ SpringMVC就是对这套流程的封装，屏蔽了很多底层代码，开放�
 
   - @RequestParam("name")String str完成HTTP请求参数与业务方法形参的映射，自动完成数据类型的转换，这些工作都是由HandlerAdapter完成
 
-SpringMVC也支持RESTful风格的url
+   SpringMVC也支持RESTful风格的url
 
 - 传统类型：http://localhost:8080/hello/index?name=zhangsan&id=10
 
@@ -129,5 +129,85 @@ public String rest(@PathVariable("name")String name, @PathVariable("id")int id){
 }
 ```
 
+- 映射Cookie
 
+  Spring MVC通过映射可以直接在业务方法中获取Cookie的值
 
+  ```java
+  @RequestMapping("/cookie")
+  public String cookie(@CookieValue(value="JSESSIONID") String sessionId){
+      System.out.println(sessionId);
+      return "index";
+  }
+  ```
+
+- 使用javaBean绑定参数：SpringMVC会根据请求的参数名和javaBean的属性名进行自动匹配，自动为对象填充属性值，同时支持级联的属性。如果出现中文乱码的问题，需要在web.xml中添加Spring  MVC自带的过滤器即可
+
+  ```xml
+  <filter>
+      <filter-name>encodingFilter</filter-name>
+      <filter-class>
+          org.springframework.web.filter.CharacterEncodingFilter
+      </filter-class>
+      <init-param>
+          <param-name>encoding</param-name>
+          <param-value>UTF-8</param-value>
+      </init-param>
+  </filter>
+  
+  <filter-mapping>
+      <filter-name>encodingFilter</filter-name>
+      <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  ```
+
+- JSP页面的转发和重定向
+
+Spring MVC默认是以转发的形式相应JSP
+
+1、转发
+
+```java
+@RequestMapping("/forward")
+public String forward(){
+    return "forward:/index.jsp";
+    //       return "index";
+}
+```
+
+2、重定向
+
+```java
+@RequestMapping("/redirect")
+public String redirect(){
+    return "redirect:/index.jsp";
+}
+```
+
+##### Spring MVC数据绑定
+
+数据绑定：在后端的业务方法中，直接获取客户端HTTP请求中的参数，将请求参数映射到业务方法的形参中，Spring MVC中数据绑定的工作是由HandlerAdapter来完成的
+
+- 基本数据类型
+
+  ```java
+  @RequestMapping("/baseType")
+  @ResponseBody
+  public String baseType(int id){
+      return id+"";
+  }
+  ```
+
+  @ResponseBody表示Spring MVC会直接将业务方法的返回值响应给客户端，如果不加该注解，Spring MVC会将业务方法的返回值传递给DispatcherServlet，再由DispatcherServlet调用ViewResolver对返回值进行解析，映射到一个JSP资源
+
+- 包装类
+
+  ```java
+  @RequestMapping("/packageType")
+  @ResponseBody
+  public String packageType(Integer id){
+     return id+"";
+  }
+  ```
+
+  包装类可以接收null，当HTTP请求中没有参数时，使用包装类定义形参的数据类型，程序不会抛出异常
