@@ -212,4 +212,109 @@ public String redirect(){
 
   包装类可以接收null，当HTTP请求中没有参数时，使用包装类定义形参的数据类型，程序不会抛出异常
   
-- 
+  @RequestParam参数
+  
+  value="num"：将HTTP请求中名为num的参数赋给形参id
+  
+  required：设置num是否为必填项，true表示必填，false表示非必填，可省略
+  
+  defaultValue=“0”：如果HTTP请求中没有num参数，默认值为0
+  
+  ```java
+  
+  @RequestMapping("/packageType")
+  @ResponseBody
+  public String packageType(
+      @RequestParam(value="num",required=false,defaultValue = "0") Integer id){
+      return id+"";
+  }
+  ```
+
+- 数组
+
+  ```java
+  @RequestMapping("/array")
+  @ResponseBody
+  public String array(String[] name){
+      String str= Arrays.toString(name);
+      return str;
+  }
+  ```
+
+  @RestController表示该控制器直接将业务方法的返回值响应给客户端，不进行视图解析，@Controller表示该控制器的每一个业务方法的返回值都会交给视图解析器进行解析，如果只需要将数据响应给客户端不需要进行视图解析则需要在对应的业务方法定义处添加@ResponseBody注解
+
+  ```java
+  @Controller
+  @RequestMapping("/data")
+  public class DataBindHandler {
+      @RequestMapping("/array")
+      @ResponseBody
+      public String array(String[] name){
+          String str= Arrays.toString(name);
+          return str;
+      }
+  }
+  ```
+
+  等同于
+
+  ```java
+  @RestController
+  @RequestMapping("/data")
+  public class DataBindHandler {
+      @RequestMapping("/array")
+      public String array(String[] name){
+          String str= Arrays.toString(name);
+          return str;
+      }
+  }
+  ```
+
+- List
+
+  SpringMVC不支持List类型的直接转换，需要对List集合进行包装
+
+  ```java
+  @Data
+  public class UserList {
+      private List<User> userList;
+  }
+  ```
+
+  ```jsp
+  <form action="/data/list" method="post">
+      用户1编号:<input type="text" name="userList[0].id"/></br>
+      用户1名称:<input type="text" name="userList[0].name"/></br>
+      用户2编号:<input type="text" name="userList[1].id"/></br>
+      用户2名称:<input type="text" name="userList[1].name"/></br>
+      <input type="submit" value="提交"/>
+  </form>
+  ```
+
+  ```java
+  @RequestMapping("/list")
+  @ResponseBody
+  public String list(UserList userList){
+      String str= "";
+      for(User user:userList.getUserList()){
+      str+=user;
+  }
+  	return str;
+  }
+  ```
+
+  处理@ResponseBody中文乱码，在springmvc.xml中配置消息转换器
+
+```xml
+<mvc:annotation-driven>
+        <!--消息转换器,后台向前台传数据出现乱码的转换-->
+        <mvc:message-converters register-defaults="true">
+            <bean          class="org.springframework.http.converter.StringHttpMessageConverter">
+                <property name="supportedMediaTypes"  value="text/html;charset=UTF-8">
+
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+```
+
