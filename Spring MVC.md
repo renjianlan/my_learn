@@ -318,3 +318,453 @@ public String redirect(){
     </mvc:annotation-driven>
 ```
 
+- Map
+
+自定义一个封装类
+
+```java
+package com.example.controller.entity;
+
+import java.util.Map;
+
+public class UserMap {
+    private Map<String,User> users;
+}
+```
+
+业务方法
+
+```java
+ @RequestMapping("/map")
+ @ResponseBody
+ public String map(UserMap userMap){
+     StringBuffer str= new StringBuffer();
+     for(String key:userMap.getUsers().keySet()){
+         User user=userMap.getUsers().get(key);
+         str.append(user);
+     }
+     	return str.toString();
+ }
+```
+
+- JSON
+
+客户端发生JSON格式的数据，直接通过Spring MVC绑定到业务方法的形参中
+
+处理Spring MVC无法加载静态资源，在web.xml中添加配置即可
+
+```xml
+<servlet-mapping>
+    <servlet-name>default</servlet-name>
+    <url-pattern>*.js</url-pattern>
+</servlet-mapping>
+```
+
+jsp
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: admin
+  Date: 2021/2/12
+  Time: 17:01
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Title</title>
+    <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+          var user={
+              id:1,
+              name:"zhangsan"
+          };
+          $.ajax({
+              url:"/data/json",
+              data:JSON.stringify(user),
+              type:"POST",
+              contentType:"application/json;charset=UTF-8",
+              dataType:"JSON",
+              success:function (data) {
+                  alert(data.id+","+data.name);
+              }
+          })
+        });
+    </script>
+</head>
+<body>
+
+</body>
+</html>
+
+```
+
+业务方法
+
+```java
+@RequestMapping("/json")
+@ResponseBody
+public User json(@RequestBody User user){
+    System.out.println(user);
+    user.setId(6);
+    user.setName("李四");
+    System.out.println(user);
+    return user;
+}
+```
+
+spring mvc中的JSON和JavaBean的转换需要借助于fastjson，pom.xml引入相关依赖
+
+```xml
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>fastjson</artifactId>
+    <version>1.2.32</version>
+</dependency>
+```
+
+springmvc.xml中添加fastjson的配置
+
+```xml
+   <mvc:annotation-driven>
+        <!--消息转换器,后台向前台传数据出现乱码的转换-->
+        <mvc:message-converters register-defaults="true">
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                <property name="supportedMediaTypes" value="text/html;charset=UTF-8">
+
+                </property>
+            </bean>
+            <!--配置fastjson-->
+            <bean class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter4"></bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+```
+
+##### Spring MVC模型数据解析
+
+JSP的四大作用域对应的内置对象：pageContext、request、session、application
+
+- pageContext对象的范围只适用于当前页面范围，即超过这个页面就不能够使用了。所以使用pageContext对象向其它页面传递参数是不可能的。
+- request对象的范围是指在一JSP网页发出请求到另一个JSP网页之间，随后这个属性就失效
+- session的作用范围为一段用户持续和服务器所连接的时间，但与服务器断线后，这个属性就无效。比如断网或者关闭浏览器。（可以设置超时）
+- application的范围在服务器一开始执行服务，到服务器关闭为止。它的范围最大，生存周期最长。
+
+模型数据的绑定是由ViewResolver来完成的，实际开发中，我们需要先添加模型数据，再交给ViewResolver来绑定
+
+Spring MVC提供了以下几种方式添加模型数据：
+
+- Map
+- Model
+- ModelAndView
+- @SeesionAttribute
+- @ModelAttribute
+
+Map
+
+```java
+@RequestMapping("/map")
+public String map(Map<String,User> map){
+    User user=new User();
+    user.setId(1);
+    user.setName("zhangsan");
+    map.put("user",user);
+    return "view";
+}
+```
+
+jsp
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: admin
+  Date: 2021/2/13
+  Time: 10:32
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page isELIgnored="false" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+${requestScope.user}
+</body>
+</html>
+
+```
+
+model
+
+```java
+    @RequestMapping("/model")
+    public String model(Model model){
+        User user=new User();
+        user.setId(1);
+        user.setName("zhangsan");
+        model.addAttribute("user",user);
+        return "view";
+    }
+```
+
+modelAndView
+
+```java
+ @RequestMapping("/modelAndView")
+    public ModelAndView modelAndView(){
+        User user=new User();
+        user.setId(1);
+        user.setName("zhangsan");
+        ModelAndView modelAndView=new ModelAndView();
+        modelAndView.addObject("user",user);
+        modelAndView.setViewName("view");
+        return modelAndView;
+    }
+
+    @RequestMapping("/modelAndView2")
+    public ModelAndView modelAndView2(){
+        User user=new User();
+        user.setId(2);
+        user.setName("zhangsan");
+        ModelAndView modelAndView=new ModelAndView();
+        modelAndView.addObject("user",user);
+        View view=new InternalResourceView("/view.jsp");
+        modelAndView.setView(view);
+        return modelAndView;
+    }
+
+    @RequestMapping("/modelAndView3")
+    public ModelAndView modelAndView3(){
+        User user=new User();
+        user.setId(3);
+        user.setName("zhangsan");
+        ModelAndView modelAndView=new ModelAndView("view");
+        modelAndView.addObject("user",user);
+        return modelAndView;
+    }
+
+    @RequestMapping("/modelAndView4")
+    public ModelAndView modelAndView4(){
+        User user=new User();
+        user.setId(4);
+        user.setName("zhangsan");
+        View view=new InternalResourceView("/view.jsp");
+        ModelAndView modelAndView=new ModelAndView(view);
+        modelAndView.addObject("user",user);
+        return modelAndView;
+    }
+
+    @RequestMapping("/modelAndView5")
+    public ModelAndView modelAndView5(){
+        User user=new User();
+        user.setId(5);
+        user.setName("zhangsan");
+        Map<String,User> map=new HashMap<>();
+        map.put("user",user);
+        ModelAndView modelAndView=new ModelAndView("view",map);
+        return modelAndView;
+    }
+
+    @RequestMapping("/modelAndView6")
+    public ModelAndView modelAndView6(){
+        User user=new User();
+        user.setId(6);
+        user.setName("zhangsan");
+        Map<String,User> map=new HashMap<>();
+        map.put("user",user);
+        View  view=new InternalResourceView("/view.jsp");
+        ModelAndView modelAndView=new ModelAndView(view,map);
+        return modelAndView;
+    }
+
+    @RequestMapping("/modelAndView7")
+    public ModelAndView modelAndView7(){
+        User user=new User();
+        user.setId(7);
+        user.setName("zhangsan");
+        ModelAndView modelAndView=new ModelAndView("view","user",user);
+        return modelAndView;
+    }
+    @RequestMapping("/modelAndView8")
+    public ModelAndView modelAndView8(){
+        User user=new User();
+        user.setId(8);
+        user.setName("zhangsan");
+        View view=new InternalResourceView("/view.jsp");
+        ModelAndView modelAndView=new ModelAndView(view,"user",user);
+        return modelAndView;
+    }
+```
+
+HttpServerletRequest
+
+```java
+ @RequestMapping("/request")
+    public String request(HttpServletRequest request){
+        User user=new User();
+        user.setId(1);
+        user.setName("zhangsan");
+        request.setAttribute("user",user);
+        return "view";
+    }
+```
+
+@ModelAttribute
+
+- 定义一个方法，该方法专门用来返回要填充到模型数据中的对象
+
+  ```java
+  @ModelAttribute
+      public User getUser(){
+          User user=new User();
+          user.setId(1);
+          user.setName("zhangsan");
+          return user;
+      }
+   或者
+   @ModelAttribute
+      public void getUser(Map<String,User> map){
+          User user=new User();
+          user.setId(1);
+          user.setName("zhangsan");
+          map.put("user",user);
+      }
+  ```
+
+- 业务方法中无需处理模型数据，只需返回视图即可
+
+  ```java
+  @RequestMapping("/modelAttribute")
+      public String modelAttribute(){
+          return "view";
+      }
+  ```
+
+  ##### 将模型数据绑定到session对象
+
+1. 直接使用原生的ServletAPI
+
+   ```java
+       @RequestMapping("/session")
+       public String session(HttpServletRequest request){
+           HttpSession session=request.getSession();
+           User user=new User();
+           user.setId(2);
+           user.setName("zhangsan");
+           session.setAttribute("user",user);
+           return "view";
+       }
+       @RequestMapping("/session2")
+       public String session2(HttpSession session){
+           User user=new User();
+           user.setId(2);
+           user.setName("zhangsan");
+           session.setAttribute("user",user);
+           return "view";
+       }
+   ```
+
+2. @SessionAttribute
+
+   ```
+   @SessionAttributes(value="user")
+   @SessionAttributes(value={"user","address"})
+   ```
+
+   对于ViewHandler中的所有业务方法，只要向request中添加了key="user"、key="address"的对象时，SpringMVC会自动将该数据添加到session中，保存key值不变
+
+   ```
+   @SessionAttributes(types={"User.class","Address.class"})
+   ```
+
+   对于ViewHandler中的所有业务方法，只要向request中添加了数据类型是User、Address的对象时，SpringMVC会自动将该数据添加到session中，保存key值不变
+
+#####        将模型数据绑定到Application对象（只能通过request间接绑定，因为ServletContext没有无参构造函数）
+
+```java
+    @RequestMapping("/application")
+    public String application(HttpServletRequest request){
+        ServletContext application=request.getServletContext();
+        User user=new User();
+        user.setId(3);
+        user.setName("zhangsan");
+        application.setAttribute("user",user);
+        return "view";
+    }
+```
+
+##### SpringMVC自定义数据转换器
+
+ 数据转换器是指将客户端HTTP请求中的参数转换为业务方法中定义的形参，自定义表示开发者可以自主设计转换的方式，HandlerAdapter已经提供了通用的转换，String转int，String转double，表单数据的封装等，但是在特殊的业务场景下，HandlerAdapter无法进行转换，就需要开发者自定义转换器
+
+客户端输入String类型的数据“2021-02-13”，自定义转换器将该数据装换为Date类型的对象
+
+- 创建DateConverter转换器
+
+  ```java
+  package com.example.controller;
+  
+  import org.springframework.core.convert.converter.Converter;
+  
+  import java.text.ParseException;
+  import java.text.SimpleDateFormat;
+  import java.util.Date;
+  
+  public class DateConverter implements Converter<String,Date> {
+  
+      private String pattern;
+      public DateConverter(String pattern){
+          this.pattern=pattern;
+      }
+  
+      @Override
+      public Date convert(String s) {
+         SimpleDateFormat simpleDateFormat=new SimpleDateFormat(this.pattern);
+         Date date=null;
+         try {
+              date=simpleDateFormat.parse(s);
+         } catch (ParseException e) {
+              e.printStackTrace();
+         }
+         return date;
+      }
+  }
+  ```
+
+  springmvc.xml中配置转换器
+
+  ```xml
+  <!--配置自定义转换器-->
+      <bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
+          <property name="converters">
+              <list>
+                  <bean class="com.example.converter.DateConverter">
+                      <constructor-arg type="java.lang.String" value="yyy-MM-dd"></constructor-arg>
+                  </bean>
+              </list>
+          </property>
+      </bean>
+  
+      <mvc:annotation-driven conversion-service="conversionService">
+  ```
+
+  Handler
+
+  ```java
+  @Controller
+  @RequestMapping("/converter")
+  public class ConvertHandler {
+  
+      @RequestMapping("/date")
+      @ResponseBody
+      public String date(Date date){
+          return date.toString();
+      }
+  }
+  ```
+
+  
+
