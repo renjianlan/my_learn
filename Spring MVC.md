@@ -716,6 +716,7 @@ HttpServerletRequest
   public class DateConverter implements Converter<String,Date> {
   
       private String pattern;
+      //bean中需要传参数，日期格式
       public DateConverter(String pattern){
           this.pattern=pattern;
       }
@@ -725,17 +726,18 @@ HttpServerletRequest
          SimpleDateFormat simpleDateFormat=new SimpleDateFormat(this.pattern);
          Date date=null;
          try {
+             //将字符串按照参数格式转换为日期类型
               date=simpleDateFormat.parse(s);
          } catch (ParseException e) {
               e.printStackTrace();
          }
          return date;
       }
-  }
+}
   ```
 
   springmvc.xml中配置转换器
-
+  
   ```xml
   <!--配置自定义转换器-->
       <bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
@@ -748,11 +750,11 @@ HttpServerletRequest
           </property>
       </bean>
   
-      <mvc:annotation-driven conversion-service="conversionService">
+    <mvc:annotation-driven conversion-service="conversionService">
   ```
 
   Handler
-
+  
   ```java
   @Controller
   @RequestMapping("/converter")
@@ -763,8 +765,375 @@ HttpServerletRequest
       public String date(Date date){
           return date.toString();
       }
-  }
+}
+  ```
+  
+  ##### Spring MVC REST
+  
+  REST:Representational State Transfer 资源表现层状态转换，是目前比较主流的一种互联网软件架构，它结构清晰，标准规范，易于理解，便于扩展。
+
+- 资源（Resource）
+
+  网络上的一个实体，或者说网络中存在的一个具体信息，一段文本、一张图片、一首歌曲、一段视频等等，总之就是一个具体的存在，可以用一个URI（统一资源定位符）指向它，每个资源都有对应的一个特定的URI，要获取该资源的时候只需要访问对应的URI即可
+
+- 表现层（Representation）
+
+  资源具体呈现出来的形式，比如文本可以用txt格式表示，也可用HTML、XML、JSON等格式来表示
+
+- 状态转换（State Transfer)
+
+  客户端如果要操作服务端中的某个资源，就需要通过某种方式让服务端发生状态转化，而这种转换是建立在表现层之上，所有叫做“表现层状态转换”
+
+###### 特点
+
+- URI更加简洁
+- 有利于不同系统之间的资源共享，只需要遵守一定的规范，不需要进行其他配置可实现资源共享
+
+###### 如何使用()
+
+REST具体操作就是HTTP协议中四个表示操作方式的动词分别对应CRUD基本操作
+
+GET用来表示获取资源
+
+POST用来表示新建资源
+
+PUT用来表示修改资源
+
+DEETE用来表示删除资源
+
+Handler
+
+```java
+package com.example.controller;
+
+import com.example.entity.Student;
+import com.example.repository.StudentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletResponse;
+import java.util.Collection;
+
+@RestController
+@RequestMapping("/rest")
+public class RESTHandler {
+
+    @Autowired
+    private StudentRepository studentRepository;
+
+    //@RequestMapping(value="/findAll",method= RequestMethod.GET)
+    @GetMapping("/findAll")
+    public Collection<Student> findAll(HttpServletResponse response){
+        response.setContentType("");
+        return studentRepository.findAll();
+    }
+    @GetMapping("/findById/{id}")
+    public Student findById(@PathVariable("id")int id, HttpServletResponse response){
+        response.setContentType("");
+        return studentRepository.findById(id);
+    }
+    @PostMapping("/save")
+    public void save(@RequestBody Student student){
+        studentRepository.saveOrUpdate(student);
+    }
+    @PutMapping("/update")
+    public void update(@RequestBody Student student){
+        studentRepository.saveOrUpdate(student);
+    }
+    @DeleteMapping("/delete/{id}")
+    public void delete(@PathVariable("id") int id){
+        studentRepository.deleteById(id);
+    }
+}
+
+```
+
+StudentRepository
+
+```java
+package com.example.repository;
+
+import com.example.entity.Student;
+
+import java.util.Collection;
+
+public interface StudentRepository {
+    public Collection<Student> findAll();
+    public Student findById(int id);
+    public void saveOrUpdate(Student student);
+    public void deleteById(int id);
+}
+```
+
+StudentRepositoryImpl
+
+```java
+package com.example.repository.impl;
+
+import com.example.entity.Student;
+import com.example.repository.StudentRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+@Repository
+public class StudentRepositoryImpl implements StudentRepository {
+    private static Map<Integer,Student> studentMap;
+
+    static{
+        studentMap=new HashMap<>();
+        studentMap.put(1,new Student(1,"zhangsan",22));
+        studentMap.put(2,new Student(2,"lisi",23));
+        studentMap.put(3,new Student(3,"wangwu",24));
+    }
+
+    @Override
+    public Collection<Student> findAll() {
+        return studentMap.values();
+    }
+
+    @Override
+    public Student findById(int id) {
+        return studentMap.get(id);
+    }
+
+    @Override
+    public void saveOrUpdate(Student student) {
+        studentMap.put(student.getId(),student);
+    }
+
+    @Override
+    public void deleteById(int id) {
+         studentMap.remove(id);
+    }
+}
+```
+
+##### Spring MVC文件上传下载
+
+- 单文件上传
+
+  底层是使用Apache fileupload组件完成上传，SpringMVC对这种方式进行了封装
+
+  1. pom.xml
+
+     ```xml
+         <dependency>
+           <groupId>commons-io</groupId>
+           <artifactId>commons-io</artifactId>
+           <version>2.5</version>
+         </dependency>
+     
+         <dependency>
+           <groupId>commons-fileupload</groupId>
+           <artifactId>commons-fileupload</artifactId>
+           <version>1.3.3</version>
+         </dependency>
+     ```
+
+  2. JSP
+
+     ```jsp
+     <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+     <html>
+     <head>
+         <title>Title</title>
+     </head>
+     <body>
+     <form action="/file/upload" method="post" enctype="multipart/form-data">
+         <input type="file" name="img"/></br>
+         <input type="submit" value="上传"/>
+     </form>
+     <img src="${path}">
+     </body>
+     </html>
+     
+     input的type为file
+     form的method设置为post（get请求只能将文件名传给服务器）
+     form的enctype设置为multipart-form-data（如果不设置只能将文件名传给服务器）
+     ```
+
+  3. Handler
+
+     ```java
+     package com.example.controller;
+     
+     import org.springframework.stereotype.Controller;
+     import org.springframework.web.bind.annotation.PostMapping;
+     import org.springframework.web.bind.annotation.RequestMapping;
+     import org.springframework.web.multipart.MultipartFile;
+     
+     import javax.servlet.http.HttpServletRequest;
+     import java.io.File;
+     import java.io.IOException;
+     
+     @Controller
+     @RequestMapping("/file")
+     public class FileHandler {
+         @PostMapping("/upload")
+         public String upload(MultipartFile img, HttpServletRequest request){
+             System.out.println(img);
+             if(img.getSize()>0){
+                 //获取保存上传文件的file路径(服务器上保存图片的文件夹）
+                 String path=request.getServletContext().getRealPath("file");
+                 //获取上传文件的文件名
+                 String name=img.getOriginalFilename();
+                 File file=new File(path,name);
+                 try {
+                     //将img内容转到file中
+                     img.transferTo(file);
+                     //保存上传之后的文件路径
+                     request.setAttribute("path","/file/"+name);
+                 } catch (IOException e) {
+                     e.printStackTrace();
+                 }
+             }
+             return "upload";
+         }
+     }
+     ```
+
+  4. springmvc.xml
+
+     ```xml
+     <!--文件上传配置-->
+     <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver"></bean>
+     ```
+
+  5. web.xml添加如下配置，否则客户端无法访问jpg
+
+     ```xml
+       <servlet-mapping>
+         <servlet-name>default</servlet-name>
+         <url-pattern>*.jpg</url-pattern>
+       </servlet-mapping>
+     ```
+
+- 多文件上传
+
+   pom.xml
+
+  ```xml
+     <dependency>
+        <groupId>jstl</groupId>
+        <artifactId>jstl</artifactId>
+        <version>1.2</version>
+      </dependency>
+  
+      <dependency>
+        <groupId>taglibs</groupId>
+        <artifactId>standard</artifactId>
+        <version>1.1.2</version>
+      </dependency>
   ```
 
-  
+  JSP
+
+  ```jsp
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <%@ page isELIgnored="false" %>
+  <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+  <html>
+  <head>
+      <title>Title</title>
+  </head>
+  <body>
+  <form action="/file/uploads" method="post" enctype="multipart/form-data">
+      file1:<input type="file" name="imgs"/></br>
+      file2:<input type="file" name="imgs"/></br>
+      file3:<input type="file" name="imgs"/></br>
+      <input type="submit" value="上传"/>
+  </form>
+  <c:forEach items="${filesPath}" var="filePath">
+      <img src="${filePath}" width="300px">
+  </c:forEach>
+  </body>
+  </html>
+  ```
+
+  Handler
+
+  ```java
+  @PostMapping("/uploads")
+      public String uploads(MultipartFile[] imgs, HttpServletRequest request){
+          List<String> filesPath=new ArrayList<>();
+          for(MultipartFile img:imgs){
+              if(img.getSize()>0) {
+                  //获取保存上传文件的file路径(服务器上保存图片的文件夹）
+                  String path = request.getServletContext().getRealPath("file");
+                  //获取上传文件的文件名
+                  String name = img.getOriginalFilename();
+                  File file = new File(path, name);
+                  try {
+                      //将img内容转到file中
+                      img.transferTo(file);
+                      //保存上传之后的文件路径
+                      request.setAttribute("path", "/file/" + name);
+                  } catch (IOException e) {
+                      e.printStackTrace();
+                  }
+                  filesPath.add("/file/"+name);
+              }
+          }
+          request.setAttribute("filesPath",filesPath);
+          return "uploads";
+      }
+  ```
+
+##### SpringMVC下载
+
+一个File对象代表硬盘中实际存在的一个文件或者目录。如果没有就新建一个，如果有就拿到这个file对象
+
+JSP
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+   <a href="/file/download/1">1.jpg</a>
+   <a href="/file/download/2">2.jpg</a>
+   <a href="/file/download/3">3.jpg</a>
+</body>
+</html>
+
+```
+
+Handler
+
+```java
+@GetMapping("/download/{name}")
+    public void download(@PathVariable("name") String name, HttpServletRequest request, HttpServletResponse response){
+        if(name!=null){
+            name+=".jpg";
+            String path=request.getServletContext().getRealPath("file");
+            File file=new File(path,name);
+            OutputStream outputStream=null;
+            if(file.exists()){
+                response.setContentType("application/forc-download");
+                response.setHeader("Content-Disposition", "attachment; filename=" + name);
+                try {
+                    outputStream=response.getOutputStream();
+                    outputStream.write(FileUtils.readFileToByteArray(file));
+                    outputStream.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }finally {
+                    if(outputStream!=null){
+                        try {
+                            outputStream.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+```
 
