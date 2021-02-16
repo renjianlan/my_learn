@@ -1137,3 +1137,287 @@ Handler
     }
 ```
 
+Spring MVC表单标签库
+
+Handler
+
+```java
+package com.example.controller;
+
+import com.example.entity.Student;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+@Controller
+@RequestMapping("/tag")
+public class TagHandler {
+    @GetMapping("/get")
+    public ModelAndView get(){
+        ModelAndView modelAndView=new ModelAndView("tag");
+        Student student=new Student(1,"zhangsan",22);
+        modelAndView.addObject(student);
+        return modelAndView;
+    }
+}
+```
+
+JSP
+
+```jsp
+<%--
+  Created by IntelliJ IDEA.
+  User: admin
+  Date: 2021/2/16
+  Time: 15:49
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@page isELIgnored="false" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+<h1>学生信息</h1>
+<form:form modelAttribute="student">
+    学生ID:<form:input path="id"/></br>
+    学生姓名:<form:input path="name"/></br>
+    学生年龄:<form:input path="age"/></br>
+    <input type="submit" value="提交" ></br>
+</form:form>
+</body>
+</html>
+```
+
+1、JSP页面导入Spring MVC表单标签库，与导入JSTL语法非常相似，前缀prefix可以自定义，通常定义为form
+
+```jsp
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+```
+
+2、将form表单与模型数据进行绑定，通过modelAttribute属性完成绑定，将modelAttribute的值设置为模型数据对应的key值
+
+```
+Handler:modelAndView.addObject("student",student);
+JSP:<form:form modelAttribute="student">
+```
+
+3、form表单完成绑定之后，将模型数据的值取出绑定到不同的标签中，通过设置标签的path属性来完成，将path属性值设置为模型数据对应的属性名即可。
+
+```jsp
+    学生ID:<form:input path="id"/></br>
+    学生姓名:<form:input path="name"/></br>
+    学生年龄:<form:input path="age"/></br>
+```
+
+SpringMVC数据校验
+
+- 基于Validator
+
+  实现Validator接口
+
+  ```java
+  package com.example.validator;
+  
+  import com.example.entity.Account;
+  import org.springframework.validation.Errors;
+  import org.springframework.validation.ValidationUtils;
+  import org.springframework.validation.Validator;
+  
+  public class AccountValidator implements Validator {
+      @Override
+      public boolean supports(Class<?> aClass) {
+          return Account.class.equals(aClass);
+      }
+  
+      //上面返回true执行如下方法
+      @Override
+      public void validate(Object o, Errors errors) {
+          ValidationUtils.rejectIfEmpty(errors,"name",null,"姓名不能为空");
+          ValidationUtils.rejectIfEmpty(errors,"password",null,"密码不能为空");
+      }
+  }
+  ```
+
+  Account
+
+  ```java
+  package com.example.entity;
+  
+  import lombok.Data;
+  
+  @Data
+  public class Account {
+      private String name;
+      private String password;
+  }
+  
+  ```
+
+  Handler
+
+  ```java
+  package com.example.controller;
+  
+  import com.example.entity.Account;
+  import org.springframework.stereotype.Controller;
+  import org.springframework.ui.Model;
+  import org.springframework.validation.BindingErrorProcessor;
+  import org.springframework.validation.BindingResult;
+  import org.springframework.validation.Errors;
+  import org.springframework.validation.annotation.Validated;
+  import org.springframework.web.bind.annotation.GetMapping;
+  import org.springframework.web.bind.annotation.PostMapping;
+  import org.springframework.web.bind.annotation.RequestMapping;
+  
+  @Controller
+  @RequestMapping("/validator")
+  public class ValidatorHandler {
+      @GetMapping("/login")
+      public String login(Model model){
+          model.addAttribute("account",new Account());
+          return "login";
+      }
+  
+      @PostMapping("/login")
+      public String login(@Validated Account account, BindingResult bindingResult){
+          if(bindingResult.hasErrors()){
+              return "login";
+          }
+          return "index";
+      }
+  }
+  ```
+
+  JSP
+
+  ```jsp
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <%@page isELIgnored="false" %>
+  <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+  <html>
+  <head>
+      <title>Title</title>
+  </head>
+  <body>
+  <form:form modelAttribute="account" action="/validator/login" method="post">
+      用户:<form:input path="name"/><form:errors path="name"/></br>
+      密码:<form:input path="password"/><form:errors path="password"/></br>
+      <input type="submit" value="提交" ></br>
+  </form:form>
+  </body>
+  </html>
+  ```
+
+  springmvc.xml
+
+  ```xml
+      <!--基于Validator的配置-->
+      <bean id="accountValidator" class="com.example.validator.AccountValidator"></bean>
+      <mvc:annotation-driven validator="accountValidator"></mvc:annotation-driven>
+  ```
+
+- Annotation JSR-303标准
+
+  使用Annotation JSR-303标准进行验证，需要导入支持这种标准的依赖jar文件，这里我们使用Hibernate Validator。
+
+  pom.xml
+
+  ```xml
+   <!--JSR-303-->
+      <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-validator</artifactId>
+        <version>5.3.6.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>javax.validation</groupId>
+        <artifactId>validation-api</artifactId>
+        <version>2.0.1.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>3.3.0.Final</version>
+      </dependency>
+  ```
+
+  通过注解的方式，直接在实体类中添加相关的验证规则
+
+  ```java
+  @Data
+  public class Person {
+      @NotEmpty(message="用户名不能为空")
+      private String username;
+      @Size(min=6,max=12,message = "密码6-12位")
+      private  String password;
+  }
+  ```
+
+  ValidatorHandler
+
+  ```java
+      @GetMapping("/register")
+      public String register(Model model){
+          model.addAttribute("person",new Person());
+          return "register";
+      }
+  
+      @PostMapping("/register")
+      public String register(@Valid Person person,BindingResult bindingResult){
+          if(bindingResult.hasErrors()){
+              return "register";
+          }
+          return "index";
+      }
+  ```
+
+  springmvc.xml
+
+  ```
+  <mvc:annotation-driven/>
+  ```
+
+  JSP
+
+  ```JSP
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <%@page isELIgnored="false" %>
+  <%@taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+  <html>
+  <head>
+      <title>Title</title>
+  </head>
+  <body>
+  <form:form modelAttribute="person" action="/validator/register2" method="post">
+      用户:<form:input path="username"/><form:errors path="username"/></br>
+      密码:<form:input path="password"/><form:errors path="password"/></br>
+      <input type="submit" value="提交" ></br>
+  </form:form>
+  </body>
+  </html>
+  ```
+
+  注解校验规则
+
+  @Null:被注解的元素必须为null
+
+  @NotNull:被注解的元素不能为null
+
+  @Min(value):被注解的元素必须是一个数字，其值必须大于等于指定的最小值
+
+  @Max(value):被注解的元素必须是一个数字，其值必须小于等于指定的最大值
+
+  @Email:被注解的元素必须是电子邮箱地址
+
+  @Pattern:被注解的元素必须符合对应的正则表达式
+
+  @Length:被注解的元素的大小必须在指定的范围内
+
+  @NotEmpty:被注解的字符串的值必须非空
+
+  Null和Empty是不同的结果，String str=null,str是null;String str="",str不是null，其值为空
+
