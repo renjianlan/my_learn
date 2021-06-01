@@ -142,3 +142,5 @@ mybatis:
   type-aliases-package: example.entity //mapper.xml中实体类前面公共包名
 ```
 
+
+
