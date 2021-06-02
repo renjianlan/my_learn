@@ -149,3 +149,5 @@ mybatis:
 @Repository是spring中的接口，依赖注入bean，可以防止@Autowired爆红
 ```
 
+
+
