@@ -142,5 +142,10 @@ mybatis:
   type-aliases-package: example.entity //mapper.xml中实体类前面公共包名
 ```
 
+注：@Mapper和@Repository的区别
 
+```
+@Mapper是mybatis中的注解，注解在mapper接口上，每个mapper接口上面写@Mapper相当于在Application上写@MapperScan("example/repository")注解
+@Repository是spring中的接口，依赖注入bean，可以防止@Autowired爆红
+```
 
